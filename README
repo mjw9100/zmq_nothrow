@@ -1,0 +1,19 @@
+This module is a "throw nothing" version of zmq.hpp.
+
+Each object type must be initialized with a call to the appropriate
+init() member function after creation and before use, infra vide.
+
+Other changes:
+
+ operator void*() has been added to context_t to allow interoperation
+ with standard zmq_ calls
+
+Motivation: 
+
+zmq:: objects are very useful, however in legacy systems with mixed 
+C/C++ code bases, try-catch is often not fully implemented throughout 
+the system.  
+
+This module provides the advantages of class-based access
+to ØMQ without creating the need to pepper try-catch statements 
+throughout the codebase.
