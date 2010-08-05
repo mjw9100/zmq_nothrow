@@ -1,44 +1,21 @@
 /*
  Copyright (c) 2007-2010 iMatix Corporation
-
- This is free software; you can redistribute it and/or modify it under
+ 
+ This file is part of 0MQ.
+ 
+ 
+ 0MQ is free software; you can redistribute it and/or modify it under
  the terms of the Lesser GNU General Public License as published by
  the Free Software Foundation; either version 3 of the License, or
  (at your option) any later version.
  
- This is distributed in the hope that it will be useful,
+ 0MQ is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  Lesser GNU General Public License for more details.
  
  You should have received a copy of the Lesser GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
- (This module is a derivative work of zmq.hpp and is released under the
- original copyright. MJW)
- */
-
-/*
- * This module is a "throw nothing" version of zmq.hpp.
- *
- * Each object type must be initialized with a call to the appropriate
- * init() member function after creation and before use, infra vide.
- * 
- *
- * Other changes:
- *
- * operator void*() has been added to context_t to allow interoperation
- * with standard zmq_ calls
- *
- *
- * Motivation: 
- *
- * zmq:: objects are very useful, however in legacy systems with mixed 
- * C/C++ code bases, try-catch is often not fully implemented throughout 
- * the system.  This module provides the advantages of class-based access
- * to ØMQ without creating the need to pepper try-catch statements 
- * throughout the codebase.
- * 
  */
 
 #ifndef __ZMQ_HPP__NOTHROW_INCLUDED__
@@ -69,47 +46,47 @@ namespace zmq {
 		
 		class message_t : private zmq_msg_t
 			{
+				enum { NOT_INIT = 0xdeadbeef, INIT = 0xf33db33f };
+				unsigned long init_;
 				friend class socket_t;
 				
 			public:
 				
-				inline message_t()
+				inline message_t() : init_(NOT_INIT)
 				{
-					// initialize to known value
-					content = this;
 				}
 				
 				inline int init()
 				{
-					assert(content == this);
-					
+					assert(init_ == NOT_INIT);
+					init_ = INIT;
 					return zmq_msg_init(this);
 				}
 				
 				inline int init(size_t size_) 
 				{
-					assert(content == this);
-
+					assert(init_ == NOT_INIT);
+					init_ = INIT;
 					return zmq_msg_init_size(this, size_);
 				}
 				
 				inline int init(void *data_, size_t size_, free_fn *ffn_, void *hint_ = NULL) 
 				{
-					assert(content == this);
-
+					assert(init_ == NOT_INIT);
+					init_ = INIT;
 					return zmq_msg_init_data(this, data_, size_, ffn_, hint_);
 				}
 				
 				inline ~message_t ()
 				{
 					// NB does not assert
-					if (content != this)
+					if (init_ == INIT)
 						zmq_msg_close(this);
 				}
 				
 				inline int rebuild()
 				{
-					assert(content != this);
+					assert(init_ == INIT);
 					
 					int rc = zmq_msg_close(this);
 					if (rc)
@@ -120,18 +97,18 @@ namespace zmq {
 				
 				inline int rebuild(size_t size_)
 				{
-					assert(content != this);
+					assert(init_ == INIT);
 					
 					int rc = zmq_msg_close(this);
 					if (rc)
 						return rc;
 					
-					return zmq_msg_init_size (this, size_);
+					return zmq_msg_init_size(this, size_);
 				}
 				
 				inline int rebuild(void *data_, size_t size_, free_fn *ffn_, void *hint_ = NULL)
 				{
-					assert(content != this);
+					assert(init_ == INIT);
 					
 					int rc = zmq_msg_close(this);
 					if (rc)
@@ -142,28 +119,28 @@ namespace zmq {
 				
 				inline int move(message_t *msg_)
 				{
-					assert(content != this);
-					assert(msg_ && msg_->content != msg_);
+					assert(init_ == INIT);
+					assert(msg_ && msg_->init_ == INIT);
 
 					return zmq_msg_move(this, msg_);
 				}
 				
 				inline int copy(message_t *msg_)
 				{
-					assert(content != this);
-					assert(msg_ && msg_->content != msg_);
+					assert(init_ == INIT);
+					assert(msg_ && msg_->init_ == INIT);
 					return zmq_msg_copy(this, msg_);
 				}
 				
 				inline void *data()
 				{
-					assert(content != this);
+					assert(init_ == INIT);
 					return zmq_msg_data(this);
 				}
 				
 				inline size_t size() const
 				{
-					assert(content != this);
+					assert(init_ == INIT);
 					return zmq_msg_size(const_cast<message_t*>(this));
 				}
 				

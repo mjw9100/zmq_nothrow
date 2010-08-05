@@ -17,3 +17,7 @@ the system.
 This module provides the advantages of class-based access
 to ØMQ without creating the need to pepper try-catch statements 
 throughout the codebase.
+
+Updates:
+
+- Per Martin S. added a separate "in use" flag
