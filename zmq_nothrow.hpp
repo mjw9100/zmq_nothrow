@@ -59,22 +59,29 @@ namespace zmq {
 				inline int init()
 				{
 					assert(init_ == NOT_INIT);
-					init_ = INIT;
-					return zmq_msg_init(this);
+					int rc = zmq_msg_init(this);
+					if (rc == 0)
+						init_ = INIT;
+					return rc;
+
 				}
 				
 				inline int init(size_t size_) 
 				{
 					assert(init_ == NOT_INIT);
-					init_ = INIT;
-					return zmq_msg_init_size(this, size_);
+					int rc = zmq_msg_init_size(this, size_);
+					if (rc == 0)
+						init_ = INIT;
+					return rc;
 				}
 				
 				inline int init(void *data_, size_t size_, free_fn *ffn_, void *hint_ = NULL) 
 				{
 					assert(init_ == NOT_INIT);
-					init_ = INIT;
-					return zmq_msg_init_data(this, data_, size_, ffn_, hint_);
+					int rc = zmq_msg_init_data(this, data_, size_, ffn_, hint_);
+					if (rc == 0)
+						init_ = INIT;
+					return rc;
 				}
 				
 				inline ~message_t ()
@@ -144,6 +151,16 @@ namespace zmq {
 					return zmq_msg_size(const_cast<message_t*>(this));
 				}
 				
+				// included for completeness or debug error checking
+				bool is_init() const {
+					if (init_ == NOT_INIT)
+						return false;
+					else if (init_ == INIT)
+						return true;
+					assert(init_ != INIT && init_ != NOT_INIT);
+					return false;
+				}
+
 			private:
 				
 				//  Disable implicit message copying, so that users won't use shared
