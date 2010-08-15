@@ -267,7 +267,7 @@ namespace zmq {
 				{
 					assert(ptr != NULL);
 					
-					return zmq_connect (ptr, addr_);
+					return zmq_connect(ptr, addr_);
 				}
 				
 				inline int send(message_t &msg_, int flags_ = 0)
