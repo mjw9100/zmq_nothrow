@@ -31,17 +31,15 @@ namespace zmq {
 		typedef zmq_free_fn free_fn;
 		typedef zmq_pollitem_t pollitem_t;
 		
-		inline int poll(zmq_pollitem_t *items_, int nitems_, long timeout_);
-		inline int device(int device_, void * insocket_, void* outsocket_);
-		
 		inline int poll(zmq_pollitem_t *items_, int nitems_, long timeout_ = -1)
 		{
 			return zmq_poll(items_, nitems_, timeout_);
 		}
 		
-		inline int device (int device_, void * insocket_, void* outsocket_)
+		inline bool device(int device_, void * insocket_, void* outsocket_)
 		{
-			return zmq_device(device_, insocket_, outsocket_);
+			int rc = zmq_device(device_, insocket_, outsocket_);
+			return rc == 0;
 		}
 		
 		class message_t : private zmq_msg_t
@@ -56,32 +54,32 @@ namespace zmq {
 				{
 				}
 				
-				inline int init()
+				inline bool init()
 				{
 					assert(init_ == NOT_INIT);
 					int rc = zmq_msg_init(this);
 					if (rc == 0)
 						init_ = INIT;
-					return rc;
+					return rc == 0;
 
 				}
 				
-				inline int init(size_t size_) 
+				inline bool init(size_t size_) 
 				{
 					assert(init_ == NOT_INIT);
 					int rc = zmq_msg_init_size(this, size_);
 					if (rc == 0)
 						init_ = INIT;
-					return rc;
+					return rc == 0;
 				}
 				
-				inline int init(void *data_, size_t size_, free_fn *ffn_, void *hint_ = NULL) 
+				inline bool init(void *data_, size_t size_, free_fn *ffn_, void *hint_ = NULL) 
 				{
 					assert(init_ == NOT_INIT);
 					int rc = zmq_msg_init_data(this, data_, size_, ffn_, hint_);
 					if (rc == 0)
 						init_ = INIT;
-					return rc;
+					return rc == 0;
 				}
 				
 				inline ~message_t ()
@@ -91,52 +89,57 @@ namespace zmq {
 						zmq_msg_close(this);
 				}
 				
-				inline int rebuild()
+				inline bool rebuild()
 				{
 					assert(init_ == INIT);
 					
 					int rc = zmq_msg_close(this);
 					if (rc)
-						return rc;
+						return false;
 					
-					return zmq_msg_init(this);
+					rc = zmq_msg_init(this);
+					return rc == 0;
 				}
 				
-				inline int rebuild(size_t size_)
+				inline bool rebuild(size_t size_)
 				{
 					assert(init_ == INIT);
 					
 					int rc = zmq_msg_close(this);
 					if (rc)
-						return rc;
+						return false;
 					
-					return zmq_msg_init_size(this, size_);
+					rc = zmq_msg_init_size(this, size_);
+					return rc == 0;
 				}
 				
-				inline int rebuild(void *data_, size_t size_, free_fn *ffn_, void *hint_ = NULL)
+				inline bool rebuild(void *data_, size_t size_, free_fn *ffn_, void *hint_ = NULL)
 				{
 					assert(init_ == INIT);
 					
 					int rc = zmq_msg_close(this);
 					if (rc)
-						return rc;
+						return false;
 					
-					return zmq_msg_init_data(this, data_, size_, ffn_, hint_);
+					rc = zmq_msg_init_data(this, data_, size_, ffn_, hint_);
+					return rc == 0;
 				}
 				
-				inline int move(message_t *msg_)
+				inline bool move(message_t *msg_)
 				{
 					assert(init_ == INIT);
 					assert(msg_ && msg_->init_ == INIT);
 
-					return zmq_msg_move(this, msg_);
+					int rc = zmq_msg_move(this, msg_);
+					return rc == 0;
 				}
 				
-				inline int copy(message_t *msg_)
+				inline bool copy(message_t *msg_)
 				{
 					assert(init_ == INIT);
 					assert(msg_ && msg_->init_ == INIT);
-					return zmq_msg_copy(this, msg_);
+					int rc = zmq_msg_copy(this, msg_);
+					return rc == 0;
 				}
 				
 				inline void *data()
@@ -179,13 +182,11 @@ namespace zmq {
 				{
 				}
 				
-				int init(int io_threads)
+				bool init(int io_threads)
 				{
 					assert(ptr == NULL);
-
 					ptr = zmq_init(io_threads);
-
-					return ptr ? 0 : -1;
+					return ptr != NULL;
 				}
 				
 				inline ~context_t()
@@ -197,7 +198,6 @@ namespace zmq {
 				inline operator void*()
 				{
 					assert(ptr != NULL);
-
 					return ptr;
 				}
 				
@@ -218,13 +218,11 @@ namespace zmq {
 				{
 				}
 				
-				int init(context_t &context_, int type_)
+				bool init(context_t &context_, int type_)
 				{
 					assert(ptr == NULL);
-					
 					ptr = zmq_socket(context_.ptr, type_);
-					
-					return ptr ? 0 : -1;
+					return ptr != NULL;
 				}
 				
 				inline ~socket_t()
@@ -236,52 +234,51 @@ namespace zmq {
 				inline operator void*()
 				{
 					assert(ptr != NULL);
-
 					return ptr;
 				}
 				
-				inline int setsockopt(int option_, const void *optval_,
+				inline bool setsockopt(int option_, const void *optval_,
 									  size_t optvallen_) __attribute__((warn_unused_result))
 				{
 					assert(ptr != NULL);
-					
-					return zmq_setsockopt(ptr, option_, optval_, optvallen_);
+					int rc = zmq_setsockopt(ptr, option_, optval_, optvallen_);
+					return rc == 0;
 				}
 				
-				inline int getsockopt(int option_, void *optval_,
+				inline bool getsockopt(int option_, void *optval_,
 									  size_t *optvallen_)
 				{
 					assert(ptr != NULL);
-					
-					return zmq_getsockopt(ptr, option_, optval_, optvallen_);
+					int rc = zmq_getsockopt(ptr, option_, optval_, optvallen_);
+					return rc == 0;
 				}
 				
-				inline int bind(const char *addr_)
+				inline bool bind(const char *addr_)
 				{
 					assert(ptr != NULL);
-					
-					return zmq_bind(ptr, addr_);
+					int rc = zmq_bind(ptr, addr_);
+					return rc == 0;
 				}
 				
-				inline int connect(const char *addr_)
+				inline bool connect(const char *addr_)
 				{
 					assert(ptr != NULL);
-					
-					return zmq_connect(ptr, addr_);
+					int rc = zmq_connect(ptr, addr_);
+					return rc == 0;
 				}
 				
-				inline int send(message_t &msg_, int flags_ = 0)
+				inline bool send(message_t &msg_, int flags_ = 0)
 				{
 					assert(ptr != NULL);
-					
-					return zmq_send(ptr, &msg_, flags_);
+					int rc = zmq_send(ptr, &msg_, flags_);
+					return rc == 0;
 				}
 				
-				inline int recv(message_t *msg_, int flags_ = 0)
+				inline bool recv(message_t *msg_, int flags_ = 0)
 				{
 					assert(ptr != NULL);
-					
-					return zmq_recv(ptr, msg_, flags_);
+					int rc = zmq_recv(ptr, msg_, flags_);
+					return rc == 0;
 				}
 				
 			private:
